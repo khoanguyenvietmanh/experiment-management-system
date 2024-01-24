@@ -1,0 +1,63 @@
+version: "3"
+
+services:
+  fastapi:
+    build:
+      context: ./
+      dockerfile: ./backend/Dockerfile
+    volumes:
+      - ./db:/db
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+    ports:
+      - 8000:8000
+    networks:
+      deploy_network:
+    container_name: fastapi_mnist
+
+  streamlit:
+    build: frontend/
+    environment:
+      - BACKEND_URL=http://fastapi_mnist:8000
+    depends_on:
+      - fastapi
+    ports:
+      - 8501:8501
+    networks:
+      deploy_network:
+    container_name: streamlit_mnist
+  
+  worker:
+    build:
+      context: ./
+      dockerfile: ./ml/Dockerfile
+    volumes:
+      - ./db:/db
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - fastapi
+      - redis
+    networks:
+      deploy_network:
+    container_name: celery_worker
+
+  redis:
+    image: redis:7
+    expose:
+      - '6379'
+    ports:
+      - 6379:6379
+    networks:
+      deploy_network:
+    container_name: redis
+
+networks:
+  deploy_network:
+    driver: bridge
+    # external:
+    #   name: net-name

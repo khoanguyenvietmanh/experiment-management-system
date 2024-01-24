@@ -1,0 +1,15 @@
+streamlit
+numpy
+pandas
+matplotlib
+torch
+torchvision
+fastapi[all]
+uvicorn
+streamlit-drawable-canvas
+tqdm
+scikit-learn
+opencv-python-headless
+celery==5.2.7
+redis==4.5.4
+sqlalchemy
