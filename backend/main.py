@@ -16,6 +16,7 @@ app = FastAPI()
 
 schemas.Base.metadata.create_all(bind=engine)
 
+# create database
 def get_db():
     db = sessionlocal()
     try:
@@ -23,16 +24,19 @@ def get_db():
     finally:
         db.close()
 
+# list all train jobs API
 @app.get("/jobs_train")
 async def fetch_jobs(db: Session = Depends(get_db)):
     jobs = db.query(schemas.Job_Train).all()
     return jobs
 
+# list all grid search jobs API
 @app.get("/jobs_gridsearch")
 async def fetch_jobs(db: Session = Depends(get_db)):
     jobs = db.query(schemas.Job_GridSearch).all()
     return jobs
 
+# create and execute a train job API
 @app.post("/train", status_code=201)
 def run_task(data: TrainApiData, db: Session = Depends(get_db)):
     drop_out = data.drop_out
@@ -59,6 +63,7 @@ def run_task(data: TrainApiData, db: Session = Depends(get_db)):
 
     return JSONResponse({"task_id": task.id})
 
+# create and execute a grid search job API
 @app.post("/grid_search", status_code=201)
 def run_task(data: GridSearchAPiData, db: Session = Depends(get_db)):
     params_dict = data.params_dict
@@ -81,6 +86,7 @@ def run_task(data: GridSearchAPiData, db: Session = Depends(get_db)):
 
     return JSONResponse({"task_id": task.id})
 
+# get current state and information of jobs API
 @app.get("/jobs/{task_id}")
 def get_status(task_id):
     task_result = AsyncResult(id=task_id, app=celery_app)
@@ -92,6 +98,7 @@ def get_status(task_id):
 
     return JSONResponse(result)
 
+# update state and results of train job API
 @app.post("/update_train")
 def update(job: Job_Train, db: Session = Depends(get_db)):
     current_job = db.query(schemas.Job_Train).filter(schemas.Job_Train.uid == job.uid).first()
@@ -104,7 +111,7 @@ def update(job: Job_Train, db: Session = Depends(get_db)):
 
     return JSONResponse({"task_id": job.uid})
 
-
+# update state and results of grid search job API
 @app.post("/update_gridsearch")
 def update(job: Job_GridSearch, db: Session = Depends(get_db)):
     current_job = db.query(schemas.Job_GridSearch).filter(schemas.Job_GridSearch.uid == job.uid).first()

@@ -40,12 +40,16 @@ st.set_page_config(
 
 st.title("Experiment Management System")
 st.sidebar.subheader("Experiments")
+
+# menu sidebar
 page = st.sidebar.selectbox(label="Menu", options=[
     "Create Job", "Progress", "Display"])
 
 st.sidebar.success("Select an option above")
 
+# create a job
 if page == "Create Job":
+    # choose kind of job
     selected = option_menu(
         menu_title=None,
         options=["Train", "Grid Search"],
@@ -57,6 +61,7 @@ if page == "Create Job":
         st.session_state.model_type = st.selectbox(
             "Model type", options=["Linear"])
 
+        # select parameters
         if st.session_state.model_type == "Linear":
             # num_layers = st.select_slider(
             #     label="Number of hidden layers", options=[1, 2, 3])
@@ -84,6 +89,7 @@ if page == "Create Job":
                        "learning_rate": learning_rate, 
                        "epochs": epochs}
 
+            # send a request to create and start a train job
             response = requests.post(url=TRAIN_URL, data=json.dumps(to_post))
 
             if response.ok:
@@ -96,6 +102,7 @@ if page == "Create Job":
 
             st.write(res)
     else:
+        # select parameters
         options_drop_out = st.multiselect(
             'Drop Out',
             [0.3, 0.5, 0.8],
@@ -124,6 +131,7 @@ if page == "Create Job":
                 }
             }
 
+            # send a request to create and start a grid search job
             response = requests.post(url=GRIDSEARCH_URL, data=json.dumps(to_post))
 
             if response.ok:
@@ -134,9 +142,11 @@ if page == "Create Job":
             else:
                 res = "Training task failed"
 
-            st.write(res)   
+            st.write(res)
 
+# track progress of jobs
 elif page == "Progress":
+    # choose kind of job
     selected = option_menu(
         menu_title=None,
         options=["Train", "Grid Search"],
@@ -168,6 +178,7 @@ elif page == "Progress":
 
                 result = response.json()
 
+                # get current state and information of each job
                 if result['task_status'] == "PROGRESS":
                     current = result['task_result']['current']
                     total = result['task_result']['total']
@@ -187,8 +198,10 @@ elif page == "Progress":
                     time.sleep(0.01)
                     process_percent = int(100 * float(current) / float(total))
 
+                    # display progress bar
                     l[r['uid']].progress(process_percent, text=display)
 
+                    # plot loss and accuracy
                     c[r['uid']][0].line_chart(loss_data)
 
                     c[r['uid']][1].line_chart(acc_data)
@@ -205,9 +218,11 @@ elif page == "Progress":
                     loss_data = pd.DataFrame(loss)
 
                     acc_data = pd.DataFrame(acc)
-
+                    
+                    # display progress bar
                     l[r['uid']].progress(100, text="Task " + r['uid'] + " : " + "Done !!!")
 
+                    # plot loss and accuracy
                     c[r['uid']][0].line_chart(loss_data)
 
                     c[r['uid']][1].line_chart(acc_data)
@@ -247,7 +262,8 @@ elif page == "Progress":
                 response = requests.get(url=GET_JOB_URL + '/' + r['uid'])
 
                 result = response.json()
-
+                
+                # get current state and information of each job
                 if result['task_status'] == "PROGRESS":
                     current = result['task_result']['current']
                     total = result['task_result']['total']
@@ -255,12 +271,14 @@ elif page == "Progress":
 
                     display = "Task " + r['uid'] + " : " + str(process_percent) + '/' + "100" + " %"
                     time.sleep(0.01)
-
+                    
+                    # display progress bar
                     l[r['uid']].progress(process_percent, text=display)
 
                 elif result['task_status'] == "SUCCESS":
                     data = result['task_result']
 
+                    # display progress bar
                     l[r['uid']].progress(100, text="Task " + r['uid'] + " : " + "Done !!!")
 
                     job = {
@@ -280,7 +298,9 @@ elif page == "Progress":
             if all(mark.values()):
                 break
 
+# display all finished jobs
 elif page == "Display":
+    # choose kind of job
     selected = option_menu(
         menu_title=None,
         options=["Train", "Grid Search"],
@@ -289,6 +309,7 @@ elif page == "Display":
     )
 
     if selected == "Train":
+        # send a request to get all finished train jobs in database
         response = requests.get(url=GET_JOB_TRAIN_URL)
         
         data = response.json()
@@ -322,6 +343,7 @@ elif page == "Display":
 
         st.dataframe(df, use_container_width=True)
     else:
+        # send a request to get all finished grid search jobs in database
         response = requests.get(url=GET_JOB_GRIDSEARCH_URL)
         
         data = response.json()

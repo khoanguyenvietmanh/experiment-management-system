@@ -44,6 +44,7 @@ class TextPickleType(TypeDecorator):
             value = json.loads(value)
         return value
 
+# Train Job Table
 class Job_Train(Base):
     __tablename__ = "Job_Train"
     uid = Column(String(100), primary_key=True)
@@ -57,7 +58,7 @@ class Job_Train(Base):
         return '<Job Train %r>' % (self.uid)
 
 
-
+# Grid Search Job Table
 class Job_GridSearch(Base):
     __tablename__ = "Job_GridSearch"
     uid = Column(String(100), primary_key=True)
